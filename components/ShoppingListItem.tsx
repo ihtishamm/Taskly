@@ -27,7 +27,7 @@ export function ShoppingListItem({ name, isCompleted }: Props) {
           style: "destructive",
         },
         { text: "Cancel", style: "cancel" },
-      ]
+      ],
     );
   };
   return (
