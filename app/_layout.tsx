@@ -9,6 +9,22 @@ export default function Layout() {
           title: "Shopping list",
         }}
       />
+      <Stack.Screen
+        name="counter"
+        options={{
+          title: "Counter",
+          presentation: "modal",
+          animation: "fade_from_bottom",
+        }}
+      />
+      <Stack.Screen
+        name="idea"
+        options={{
+          title: "Idea",
+          presentation: "modal",
+          animation: "fade_from_bottom",
+        }}
+      />
     </Stack>
   );
 }
