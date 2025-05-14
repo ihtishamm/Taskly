@@ -1,7 +1,8 @@
 import { FlatList, StyleSheet, Text, TextInput, View } from "react-native";
 import { ShoppingListItem } from "../components/ShoppingListItem";
 import { theme } from "../theme";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getFromStorage, saveToStorage } from "../utils/storage";
 
 type ShoppingListItemProps = {
   id: string;
@@ -10,10 +11,22 @@ type ShoppingListItemProps = {
   completedAtTimestamp?: number;
   lastUpdatedTimestamp: number;
 };
-const ShoppingItem: ShoppingListItemProps[] = [];
+
+const STORAGE_KEY = "shoppingList";
+
 export default function App() {
-  const [items, setItems] = useState<ShoppingListItemProps[]>(ShoppingItem);
+  const [items, setItems] = useState<ShoppingListItemProps[]>([]);
   const [text, setText] = useState<string>("");
+
+  useEffect(() => {
+    const fetchItems = async () => {
+      const items = await getFromStorage(STORAGE_KEY);
+      if (items) {
+        setItems(items);
+      }
+    };
+    fetchItems();
+  }, []);
 
   const handleSubmit = () => {
     setItems([
@@ -25,11 +38,13 @@ export default function App() {
         lastUpdatedTimestamp: Date.now(),
       },
     ]);
+    saveToStorage(STORAGE_KEY, items);
     setText("");
   };
 
   const handleDelete = (id: string) => {
     setItems(items.filter((item) => item.id !== id));
+    saveToStorage(STORAGE_KEY, items);
   };
 
   const handleToggle = (id: string) => {
