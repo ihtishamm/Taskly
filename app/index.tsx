@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, TextInput } from "react-native";
+import { FlatList, StyleSheet, Text, TextInput, View } from "react-native";
 import { ShoppingListItem } from "../components/ShoppingListItem";
 import { theme } from "../theme";
 import { useState } from "react";
@@ -7,20 +7,7 @@ type ShoppingListItemProps = {
   id: string;
   name: string;
 };
-const ShoppingItem: ShoppingListItemProps[] = [
-  {
-    id: "1",
-    name: "Banana",
-  },
-  {
-    id: "2",
-    name: "Cake",
-  },
-  {
-    id: "3",
-    name: "Orange",
-  },
-];
+const ShoppingItem: ShoppingListItemProps[] = [];
 export default function App() {
   const [items, setItems] = useState<ShoppingListItemProps[]>(ShoppingItem);
   const [text, setText] = useState<string>("");
@@ -30,23 +17,28 @@ export default function App() {
     setText("");
   };
   return (
-    <ScrollView
+    <FlatList
+      data={items}
+      renderItem={({ item }) => <ShoppingListItem name={item.name} />}
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
       stickyHeaderIndices={[0]}
-    >
-      <TextInput
-        style={styles.textInput}
-        placeholder="Add a new item"
-        value={text}
-        onChangeText={setText}
-        onSubmitEditing={handleSubmit}
-        returnKeyType="done"
-      />
-      {items.map((item) => (
-        <ShoppingListItem key={item.id} name={item.name} />
-      ))}
-    </ScrollView>
+      ListHeaderComponent={
+        <TextInput
+          style={styles.textInput}
+          placeholder="Add a new item"
+          value={text}
+          onChangeText={setText}
+          onSubmitEditing={handleSubmit}
+          returnKeyType="done"
+        />
+      }
+      ListEmptyComponent={
+        <View style={styles.listEmptyContainer}>
+          <Text>No items in your shopping list</Text>
+        </View>
+      }
+    />
   );
 }
 
@@ -68,5 +60,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     marginBottom: 12,
     backgroundColor: theme.colorWhite,
+  },
+  listEmptyContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    marginVertical: 18,
   },
 });
