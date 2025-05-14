@@ -5,14 +5,22 @@ import * as Notifications from "expo-notifications";
 import { useEffect, useState } from "react";
 import { TimeSegment } from "../../components/TimeSegment";
 import { intervalToDuration, isBefore } from "date-fns";
+import { getFromStorage, saveToStorage } from "../../utils/storage";
 
-const timestamp = Date.now() + 100 * 60;
+const frequency = 60 * 1000;
 
+export const countdownStorageKey = "countdown";
+
+export type PersistedCountdown = {
+  currentNotificationId: string | null;
+  completedAtTimestamps: number[];
+};
 type CountdownStatus = {
   isOverdue: boolean;
   distance: ReturnType<typeof intervalToDuration>;
 };
 export default function CounterScreen() {
+  const [countdownState, setCountdownState] = useState<PersistedCountdown>();
   const [status, setStatus] = useState<CountdownStatus>({
     isOverdue: false,
     distance: {
@@ -22,8 +30,22 @@ export default function CounterScreen() {
       seconds: 0,
     },
   });
+
+  useEffect(() => {
+    const init = async () => {
+      const persistedCountdown = await getFromStorage(countdownStorageKey);
+      if (persistedCountdown) {
+        setCountdownState(persistedCountdown);
+      }
+    };
+    init();
+  }, []);
+  const lastCompletedAt = countdownState?.completedAtTimestamps[0];
   useEffect(() => {
     const interval = setInterval(() => {
+      const timestamp = lastCompletedAt
+        ? lastCompletedAt + frequency
+        : Date.now();
       const isOverdue = isBefore(timestamp, Date.now());
       const distance = intervalToDuration(
         isOverdue
@@ -39,18 +61,19 @@ export default function CounterScreen() {
       setStatus({ isOverdue, distance });
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [lastCompletedAt]);
 
   const scheduleNotification = async () => {
+    let notificationId;
     const permission = await registerForPushNotificationsAsync();
     if (permission === "granted") {
-      await Notifications.scheduleNotificationAsync({
+      notificationId = await Notifications.scheduleNotificationAsync({
         content: {
-          title: "Hello",
-          body: "This is a test notification",
+          title: "Task due",
+          body: "You haven't done the thing yet!",
         },
         trigger: {
-          seconds: 5,
+          seconds: frequency / 1000,
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
         },
       });
@@ -59,6 +82,22 @@ export default function CounterScreen() {
         "Permission not granted. Go to the settings to enable notifications",
       );
     }
+    if (countdownState?.currentNotificationId) {
+      await Notifications.cancelScheduledNotificationAsync(
+        countdownState.currentNotificationId,
+      );
+    }
+
+    const newCountdownState: PersistedCountdown = {
+      currentNotificationId: notificationId ?? null,
+      completedAtTimestamps: countdownState
+        ? [Date.now(), ...countdownState.completedAtTimestamps]
+        : [Date.now()],
+    };
+
+    setCountdownState(newCountdownState);
+
+    await saveToStorage(countdownStorageKey, newCountdownState);
   };
   return (
     <View
