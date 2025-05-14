@@ -37,3 +37,4 @@ yarn-error.*
 *.tsbuildinfo
 
 tempnpm-cache/*
+config.bat
