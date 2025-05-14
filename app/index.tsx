@@ -6,6 +6,9 @@ import { useState } from "react";
 type ShoppingListItemProps = {
   id: string;
   name: string;
+  isCompleted: boolean;
+  completedAtTimestamp?: number;
+  lastUpdatedTimestamp: number;
 };
 const ShoppingItem: ShoppingListItemProps[] = [];
 export default function App() {
@@ -13,13 +16,47 @@ export default function App() {
   const [text, setText] = useState<string>("");
 
   const handleSubmit = () => {
-    setItems([...items, { id: new Date().toISOString(), name: text }]);
+    setItems([
+      ...items,
+      {
+        id: new Date().toISOString(),
+        name: text,
+        isCompleted: false,
+        lastUpdatedTimestamp: Date.now(),
+      },
+    ]);
     setText("");
+  };
+
+  const handleDelete = (id: string) => {
+    setItems(items.filter((item) => item.id !== id));
+  };
+
+  const handleToggle = (id: string) => {
+    setItems(
+      items.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              isCompleted: !item.isCompleted,
+              completedAtTimestamp: item.isCompleted ? undefined : Date.now(),
+              lastUpdatedTimestamp: Date.now(),
+            }
+          : item,
+      ),
+    );
   };
   return (
     <FlatList
-      data={items}
-      renderItem={({ item }) => <ShoppingListItem name={item.name} />}
+      data={orderShoppingList(items)}
+      renderItem={({ item }) => (
+        <ShoppingListItem
+          name={item.name}
+          isCompleted={item.isCompleted}
+          onDelete={() => handleDelete(item.id)}
+          onToggle={() => handleToggle(item.id)}
+        />
+      )}
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
       stickyHeaderIndices={[0]}
@@ -40,6 +77,28 @@ export default function App() {
       }
     />
   );
+}
+
+function orderShoppingList(shoppingList: ShoppingListItemProps[]) {
+  return shoppingList.sort((item1, item2) => {
+    if (item1.completedAtTimestamp && item2.completedAtTimestamp) {
+      return item2.completedAtTimestamp - item1.completedAtTimestamp;
+    }
+
+    if (item1.completedAtTimestamp && !item2.completedAtTimestamp) {
+      return 1;
+    }
+
+    if (!item1.completedAtTimestamp && item2.completedAtTimestamp) {
+      return -1;
+    }
+
+    if (!item1.completedAtTimestamp && !item2.completedAtTimestamp) {
+      return item2.lastUpdatedTimestamp - item1.lastUpdatedTimestamp;
+    }
+
+    return 0;
+  });
 }
 
 const styles = StyleSheet.create({
